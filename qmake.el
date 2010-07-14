@@ -339,20 +339,5 @@
     )
   )
 
-(defun is-curly-back-and-curly-forward()
-  "Checks if the previous line is \"}[a-z]+{\" int that case it should return true"
-  (interactive)
-  (let (
-        ( is-back-forw nil)
-        )
-    (beginning-of-line)
-    (forward-line -1)
-    (if (looking-at "}[a-z]+{")
-        (progn
-          (message "Combined curly")
-          (setq is-back-forw t)))
-    (forward-line 1)
-    is-back-forw)
-  )
 
 
