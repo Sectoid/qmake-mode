@@ -44,12 +44,13 @@
 ;; provides qmake-mode for emacs
 ;; qmake is Qt specific make file.
 ;; Since there exists no other (what i know of)
-;; qmake mode for emacs, i decided to create on.
+;; qmake mode for emacs, i decided to create one.
 ;; If you think this looks messy, its because
 ;; Im by know way any hacker when it comes to
 ;; lisp and in particular elisp. If you find
 ;; any errors or have any good suggestions,
-;; don't hesitate to give me a mail
+;; don't hesitate to give me a mail, or a
+;; diff.
 ;;
 ;;-------------------------------------------------------
 (provide 'qmake-mode)
@@ -254,6 +255,11 @@
 (defvar qmake-variables-regexp (regexp-opt qmake-variables 'words))
 
 
+(setq qmake-functions-variables nil)
+(setq  qmake-variables nil)
+
+
+
 (setq qmake-key-words
       (list
        '("#.*" . font-lock-comment-face)
@@ -267,8 +273,20 @@
 
 
 
+(defvar qmake-mode-syntax-table
+  (let ((new-table (make-syntax-table)))
+		(modify-syntax-entry ?# "<" new-table)
+		(modify-syntax-entry ?\n ">" new-table)
+		new-table)
+  "Syntax table for qmake-mode.")
+
+
+
+
 
 (define-derived-mode qmake-mode fundamental-mode
+  "Major mode for qmake files (Qt)"
+  :syntax-table qmake-mode-syntax-table
   (setq font-lock-defaults '(qmake-key-words))
   (setq mode-name "qmake mode")
   (set (make-local-variable 'indent-line-function) 'qmake-ident-line)
@@ -374,3 +392,113 @@
 
 
 
+;;Creating Menu
+(define-key-after
+  global-map
+  [menu-bar qmake-menu]
+  (cons "Qmake" (make-sparse-keymap "hoot hoot"))
+  'tools )
+
+;; Creating a menu item
+(define-key
+  global-map
+  [menu-bar qmake-menu compile]
+  '("compile" . qmake-compile))
+
+
+
+;; code to remove the whole menu panel
+;;(global-unset-key [menu-bar qmake-menu])
+(defun qmake-compile()
+  "Testing compile"
+  (interactive)
+  (let (
+        (file-name (buffer-file-name))
+        (cur-buffer (buffer-name))
+        )
+    (progn 
+      (shell-command (concat "qmake -Wall " file-name))
+      (switch-to-buffer-other-window "*Shell Command Output*")
+      (qmake-highlight-error)
+      (goto-char (car (qmake-compile-search-for-errors)))
+      (switch-to-buffer-other-window cur-buffer)
+      )
+    )
+  )
+
+
+
+
+(setq qmake-compile-error-points nil)
+
+(defun qmake-compile-search-for-errors()
+  "interactive"
+  (interactive)
+  (goto-char (point-min))
+  (let (
+        (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+        (qmake-compile-error-points ())
+        )
+    (while (integerp my-point)
+      (progn 
+        (push my-point qmake-compile-error-points)
+        (goto-char my-point)
+        (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+        )
+      )
+    qmake-compile-error-points
+    )
+  )
+
+
+
+
+(defun qmake-highlight-error()
+  "Highlight error in the compile buffer"
+  (interactive)
+  (save-excursion)
+  (highlight-regexp ":[0-9]*:")
+  
+  )
+
+
+;; -----These functions are under construction....
+;; The basic idea is to jump to the line number of error
+;;
+;;
+;; (defun get-line-nr-from-error()
+;;   "FUFUF"
+;;   (interactive)
+;;   (let (
+;;         (point-list (calle))
+;;         (line-nr-list ())
+;;         ( current-point )
+;;         )
+;;     (while (> (length point-list) 0)
+;;       (setq current-point (pop point-list))
+;;       (goto-char current-point)
+;;       (push (buffer-substring (- (point) 3) (- (point) 1) ) line-nr-list)
+;;       )
+;;     line-nr-list
+;;     )
+;;   )
+
+
+
+;; (defun calle()
+;;   "interactive"
+;;   (interactive)
+;;   (let (
+;;         (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+;;         (error-points ())
+;;         )
+;;     (while (integerp my-point)
+;;       (progn 
+;;         (push my-point error-points)
+;;         (goto-char my-point)
+;;         (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+;;         )
+;;       )
+;;     error-points
+;;     )
+;;   )
