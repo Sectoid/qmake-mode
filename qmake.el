@@ -18,7 +18,7 @@
 ;;       disclaimer in the documentation and/or other materials
 ;;       provided with the distribution.
 
-;;     * Neither the name of the <ORGANIZATION> nor the names of its
+;;     * Neither the name of the EOCC nor the names of its
 ;;       contributors may be used to endorse or promote products
 ;;       derived from this software without specific prior written
 ;;       permission.
@@ -415,13 +415,16 @@
   (let (
         (file-name (buffer-file-name))
         (cur-buffer (buffer-name))
+        (line-number-list ())
         )
     (progn 
       (shell-command (concat "qmake -Wall " file-name))
       (switch-to-buffer-other-window "*Shell Command Output*")
       (qmake-highlight-error)
       (goto-char (car (qmake-compile-search-for-errors)))
+      (setq line-number-list (qmake-compile-get-line-nr-from-error))
       (switch-to-buffer-other-window cur-buffer)
+      (goto-line (car line-number-list))
       )
     )
   )
@@ -429,7 +432,7 @@
 
 
 
-(setq qmake-compile-error-points nil)
+
 
 (defun qmake-compile-search-for-errors()
   "interactive"
@@ -462,43 +465,71 @@
   )
 
 
-;; -----These functions are under construction....
+;; -----These functions are under construction....----------
 ;; The basic idea is to jump to the line number of error
-;;
-;;
-;; (defun get-line-nr-from-error()
-;;   "FUFUF"
-;;   (interactive)
-;;   (let (
-;;         (point-list (calle))
-;;         (line-nr-list ())
-;;         ( current-point )
-;;         )
-;;     (while (> (length point-list) 0)
-;;       (setq current-point (pop point-list))
-;;       (goto-char current-point)
-;;       (push (buffer-substring (- (point) 3) (- (point) 1) ) line-nr-list)
-;;       )
-;;     line-nr-list
-;;     )
-;;   )
+
+(defun qmake-compile-get-line-nr-from-error()
+  "reads the number for which the compilation has failed and returns a list
+   on this"
+  (interactive)
+  (goto-char (point-min))
+  (let (
+        (point-list (qmake-compile-list-error))
+        (line-nr-list ())
+        ( current-point )
+        )
+    (while (> (length point-list) 0)
+      (setq current-point (pop point-list))
+      (goto-char current-point)
+      (push (qmake-compile-error-line-nr current-point) line-nr-list)
+      )
+    line-nr-list
+    )
+  )
 
 
 
-;; (defun calle()
-;;   "interactive"
-;;   (interactive)
-;;   (let (
-;;         (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-;;         (error-points ())
-;;         )
-;;     (while (integerp my-point)
-;;       (progn 
-;;         (push my-point error-points)
-;;         (goto-char my-point)
-;;         (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
-;;         )
-;;       )
-;;     error-points
-;;     )
-;;   )
+(defun qmake-compile-list-error()
+  "Search through the buffer after compile errors, 
+   it then returns a list of these points"
+  (interactive)
+  (let (
+        (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+        (error-points ())
+        )
+    (while (integerp my-point)
+      (progn 
+        (push my-point error-points)
+        (goto-char my-point)
+        (setq my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
+        )
+      )
+    error-points
+    )
+  )
+
+
+(defun qmake-compile-error-line-nr(current-pos)
+  "Returns the number for which the error occured while compiling
+   For example asdha/asdas:19: 
+                              ^- Current-pos (after search-forward-regexp)
+   Will return number 19"
+  (interactive)
+  (let (
+        (start-of-line (progn
+                         (goto-char current-pos)
+                         (move-to-column 0)
+                         (point)
+                         )
+                       )
+        (error-line-text nil)
+        (st-error-point nil)
+        (end-error-point nil)
+        )
+    (progn 
+      (setq error-line-text (buffer-substring-no-properties start-of-line current-pos))
+      (setq st-error-point (+ (+ (string-match ":[0-9]+" error-line-text) 1) start-of-line))
+      (string-to-number (buffer-substring-no-properties st-error-point  current-pos))
+      )
+    )
+  )
