@@ -55,6 +55,19 @@
 ;;-------------------------------------------------------
 (provide 'qmake-mode)
 
+;; User define variable, set to which qmake to use also add 
+;; possible arguments for qmake.
+;; To set it use M-x set-variable <ret> qmake-command-str 
+;; <ret> "/usr/local/bin/qmake"
+(defvar qmake-command-str "qmake -Wall"
+  "*This variable will set the  qmake whereabout and options for compiling"
+  )
+
+
+
+;;-------------------------------------------------------
+;; There is no more user defined variables under this line.
+;;-------------------------------------------------------
 (defvar qmake-mode-hook nil)
 
 (defface qmake-face-platform
@@ -406,7 +419,7 @@
   '("compile" . qmake-compile))
 
 
-
+(concat qmake-command-str " " "FISK")
 ;; code to remove the whole menu panel
 ;;(global-unset-key [menu-bar qmake-menu])
 (defun qmake-compile()
@@ -418,7 +431,7 @@
         (line-number-list ())
         )
     (progn 
-      (shell-command (concat "qmake -Wall " file-name))
+      (shell-command (concat qmake-command-str " " file-name))
       (switch-to-buffer-other-window "*Shell Command Output*")
       (qmake-highlight-error)
       (goto-char (car (qmake-compile-search-for-errors)))
@@ -458,14 +471,12 @@
 
 (defun qmake-highlight-error()
   "Highlight error in the compile buffer"
-  (interactive)
   (save-excursion)
   (highlight-regexp ":[0-9]*:")
   
   )
 
 
-;; -----These functions are under construction....----------
 ;; The basic idea is to jump to the line number of error
 
 (defun qmake-compile-get-line-nr-from-error()
@@ -492,7 +503,6 @@
 (defun qmake-compile-list-error()
   "Search through the buffer after compile errors, 
    it then returns a list of these points"
-  (interactive)
   (let (
         (my-point (search-forward-regexp ":[0-9]*:" (point-max) t))
         (error-points ())
@@ -514,7 +524,6 @@
    For example asdha/asdas:19: 
                               ^- Current-pos (after search-forward-regexp)
    Will return number 19"
-  (interactive)
   (let (
         (start-of-line (progn
                          (goto-char current-pos)
